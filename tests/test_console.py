@@ -1,742 +1,1745 @@
 #!/usr/bin/python3
-"""Module for TestHBNBCommand class."""
-
-from console import HBNBCommand
-from models.engine.file_storage import FileStorage
-import unittest
-import datetime
-from unittest.mock import patch
-import sys
-from io import StringIO
-import re
-import os
-
-
-class TestHBNBCommand(unittest.TestCase):
-
-    """Tests HBNBCommand console."""
-
-    attribute_values = {
-        str: "foobar108",
-        int: 1008,
-        float: 1.08
-    }
-
-    reset_values = {
-        str: "",
-        int: 0,
-        float: 0.0
-    }
-
-    test_random_attributes = {
-        "strfoo": "barfoo",
-        "intfoo": 248,
-        "floatfoo": 9.8
-    }
-
-    def setUp(self):
-        """Sets up test cases."""
-        if os.path.isfile("file.json"):
-            os.remove("file.json")
-        self.resetStorage()
-
-    def resetStorage(self):
-        """Resets FileStorage data."""
-        FileStorage._FileStorage__objects = {}
-        if os.path.isfile(FileStorage._FileStorage__file_path):
-            os.remove(FileStorage._FileStorage__file_path)
-
-    def test_help(self):
-        """Tests the help command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("help")
-        s = """
-Documented commands (type help <topic>):
-========================================
-EOF  all  count  create  destroy  help  quit  show  update
 
 """
-        self.assertEqual(s, f.getvalue())
+Test module for the console 'create' command
+"""
+import os
+import sys
+import json
+import unittest
+from io import StringIO
+from unittest.mock import patch
 
-    def test_help_EOF(self):
-        """Tests the help command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("help EOF")
-        s = 'Handles End Of File character.\n        \n'
-        self.assertEqual(s, f.getvalue())
+import models
+from models.user import User
+from models.city import City
+from models.place import Place
+from models.state import State
+from models.review import Review
+from models.amenity import Amenity
+from models.base_model import BaseModel
+from console import HBNBCommand as CMD
 
-    def test_help_quit(self):
-        """Tests the help command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("help quit")
-        s = 'Exits the program.\n        \n'
-        self.assertEqual(s, f.getvalue())
+current_dir = os.path.dirname(os.path.realpath(__file__))
+parent_dir = os.path.dirname(current_dir)
+"""Add parent dir to sys path"""
+sys.path.append(parent_dir)
 
-    def test_help_create(self):
-        """Tests the help command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("help create")
-        s = 'Creates an instance.\n        \n'
-        self.assertEqual(s, f.getvalue())
 
-    def test_help_show(self):
-        """Tests the help command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("help show")
-        s = 'Prints the string representation of an instance.\n        \n'
-        self.assertEqual(s, f.getvalue())
+class TestConsole(unittest.TestCase):
+    """Test 'help', 'quit', 'EOF' and  empty line'"""
 
-    def test_help_destroy(self):
-        """Tests the help command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("help destroy")
-        s = 'Deletes an instance based on the class name and id.\n        \n'
-        self.assertEqual(s, f.getvalue())
+    def test_help(self):
+        ideal = ("Documented commands (type help <topic>):\n"
+                 "========================================\n"
+                 "EOF  all  count  create  destroy  help  quit  show  update")
+        with patch("sys.stdout", new=StringIO()) as f:
+            CMD().onecmd("help")
+            self.assertEqual(f.getvalue().strip(), ideal)
 
-    def test_help_all(self):
-        """Tests the help command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("help all")
-        s = 'Prints all string representation of all instances.\n        \n'
-        self.assertEqual(s, f.getvalue())
+    def test_quit(self):
+        """test quit"""
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.assertTrue(CMD().onecmd("quit"))
 
-    def test_help_count(self):
-        """Tests the help command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("help count")
-        s = 'Counts the instances of a class.\n        \n'
-        self.assertEqual(s, f.getvalue())
+    def test_EOF(self):
+        """test EOF"""
+        with patch("sys.stdout", new=StringIO()) as f:
+            self.assertTrue(CMD().onecmd("EOF"))
 
-    def test_help_update(self):
-        """Tests the help command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("help update")
-        s = 'Updates an instance by adding or updating attribute.\n        \n'
-        self.assertEqual(s, f.getvalue())
+    def test_empty_line(self):
+        """test empty line"""
+        with patch("sys.stdout", new=StringIO()) as f:
+            CMD().onecmd("")
+            self.assertEqual(f.getvalue().strip(), "")
 
-    def test_do_quit(self):
-        """Tests quit commmand."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("quit")
-        msg = f.getvalue()
-        self.assertTrue(len(msg) == 0)
-        self.assertEqual("", msg)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("quit garbage")
-        msg = f.getvalue()
-        self.assertTrue(len(msg) == 0)
-        self.assertEqual("", msg)
 
-    def test_do_EOF(self):
-        """Tests EOF commmand."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("EOF")
-        msg = f.getvalue()
-        self.assertTrue(len(msg) == 1)
-        self.assertEqual("\n", msg)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("EOF garbage")
-        msg = f.getvalue()
-        self.assertTrue(len(msg) == 1)
-        self.assertEqual("\n", msg)
+class TestCreateCommand(unittest.TestCase):
+    """
+    Tests for create command
+    """
 
-    def test_emptyline(self):
-        """Tests emptyline functionality."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("\n")
-        s = ""
-        self.assertEqual(s, f.getvalue())
+    def setUp(self):
+        """Reset storage object"""
+        models.storage.clean()
 
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("                  \n")
-        s = ""
-        self.assertEqual(s, f.getvalue())
-
-    def test_do_create(self):
-        """Tests create for all classes."""
-        for classname in self.classes():
-            self.help_test_do_create(classname)
-
-    def help_test_do_create(self, classname):
-        """Helper method to test the create commmand."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("create {}".format(classname))
-        uid = f.getvalue()[:-1]
-        self.assertTrue(len(uid) > 0)
-        key = "{}.{}".format(classname, uid)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("all {}".format(classname))
-        self.assertTrue(uid in f.getvalue())
-
-    def test_do_create_error(self):
-        """Tests create command with errors."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("create")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class name missing **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("create garbage")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class doesn't exist **")
-
-    def test_do_show(self):
-        """Tests show for all classes."""
-        for classname in self.classes():
-            self.help_test_do_show(classname)
-            self.help_test_show_advanced(classname)
-
-    def help_test_do_show(self, classname):
-        """Helps test the show command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("create {}".format(classname))
-        uid = f.getvalue()[:-1]
-        self.assertTrue(len(uid) > 0)
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("show {} {}".format(classname, uid))
-        s = f.getvalue()[:-1]
-        self.assertTrue(uid in s)
-
-    def test_do_show_error(self):
-        """Tests show command with errors."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("show")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class name missing **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("show garbage")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class doesn't exist **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("show BaseModel")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** instance id missing **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("show BaseModel 6524359")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** no instance found **")
-
-    def help_test_show_advanced(self, classname):
-        """Helps test .show() command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("create {}".format(classname))
-        uid = f.getvalue()[:-1]
-        self.assertTrue(len(uid) > 0)
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('{}.show("{}")'.format(classname, uid))
-        s = f.getvalue()
-        self.assertTrue(uid in s)
-
-    def test_do_show_error_advanced(self):
-        """Tests show() command with errors."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(".show()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class name missing **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("garbage.show()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class doesn't exist **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("BaseModel.show()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** instance id missing **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('BaseModel.show("6524359")')
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** no instance found **")
-
-    def test_do_destroy(self):
-        """Tests destroy for all classes."""
-        for classname in self.classes():
-            self.help_test_do_destroy(classname)
-            self.help_test_destroy_advanced(classname)
-
-    def help_test_do_destroy(self, classname):
-        """Helps test the destroy command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("create {}".format(classname))
-        uid = f.getvalue()[:-1]
-        self.assertTrue(len(uid) > 0)
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("destroy {} {}".format(classname, uid))
-        s = f.getvalue()[:-1]
-        self.assertTrue(len(s) == 0)
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(".all()")
-        self.assertFalse(uid in f.getvalue())
-
-    def test_do_destroy_error(self):
-        """Tests destroy command with errors."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("destroy")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class name missing **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("destroy garbage")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class doesn't exist **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("destroy BaseModel")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** instance id missing **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("destroy BaseModel 6524359")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** no instance found **")
-
-    def help_test_destroy_advanced(self, classname):
-        """Helps test the destroy command."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("create {}".format(classname))
-        uid = f.getvalue()[:-1]
-        self.assertTrue(len(uid) > 0)
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('{}.destroy("{}")'.format(classname, uid))
-        s = f.getvalue()[:-1]
-        self.assertTrue(len(s) == 0)
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(".all()")
-        self.assertFalse(uid in f.getvalue())
-
-    def test_do_destroy_error_advanced(self):
-        """Tests destroy() command with errors."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(".destroy()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class name missing **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("garbage.destroy()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class doesn't exist **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("BaseModel.destroy()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** instance id missing **")
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('BaseModel.destroy("6524359")')
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** no instance found **")
-
-    def test_do_all(self):
-        """Tests all for all classes."""
-        for classname in self.classes():
-            self.help_test_do_all(classname)
-            self.help_test_all_advanced(classname)
-
-    def help_test_do_all(self, classname):
-        """Helps test the all command."""
-        uid = self.create_class(classname)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("all")
-        s = f.getvalue()[:-1]
-        self.assertTrue(len(s) > 0)
-        self.assertIn(uid, s)
-
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("all {}".format(classname))
-        s = f.getvalue()[:-1]
-        self.assertTrue(len(s) > 0)
-        self.assertIn(uid, s)
-
-    def test_do_all_error(self):
-        """Tests all command with errors."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("all garbage")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class doesn't exist **")
-
-    def help_test_all_advanced(self, classname):
-        """Helps test the .all() command."""
-        uid = self.create_class(classname)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("{}.all()".format(classname))
-        s = f.getvalue()[:-1]
-        self.assertTrue(len(s) > 0)
-        self.assertIn(uid, s)
-
-    def test_do_all_error_advanced(self):
-        """Tests all() command with errors."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("garbage.all()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class doesn't exist **")
-
-    def test_count_all(self):
-        """Tests count for all classes."""
-        for classname in self.classes():
-            self.help_test_count_advanced(classname)
-
-    def help_test_count_advanced(self, classname):
-        """Helps test .count() command."""
-        for i in range(20):
-            uid = self.create_class(classname)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("{}.count()".format(classname))
-        s = f.getvalue()[:-1]
-        self.assertTrue(len(s) > 0)
-        self.assertEqual(s, "20")
-
-    def test_do_count_error(self):
-        """Tests .count() command with errors."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("garbage.count()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class doesn't exist **")
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(".count()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class name missing **")
-
-    def test_update_1(self):
-        """Tests update 1..."""
-        classname = "BaseModel"
-        attr = "foostr"
-        val = "fooval"
-        uid = self.create_class(classname)
-        cmd = '{}.update("{}", "{}", "{}")'
-        #  cmd = 'update {} {} {} {}'
-        cmd = cmd.format(classname, uid, attr, val)
-        #  print("CMD::", cmd)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(cmd)
-        s = f.getvalue()
-        self.assertEqual(len(s), 0)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('{}.show("{}")'.format(classname, uid))
-        s = f.getvalue()
-        self.assertIn(attr, s)
-        self.assertIn(val, s)
-
-    def test_update_2(self):
-        """Tests update 1..."""
-        classname = "User"
-        attr = "foostr"
-        val = "fooval"
-        uid = self.create_class(classname)
-        cmd = '{}.update("{}", "{}", "{}")'
-        #  cmd = 'update {} {} {} {}'
-        cmd = cmd.format(classname, uid, attr, val)
-        #  print("CMD::", cmd)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(cmd)
-        s = f.getvalue()
-        self.assertEqual(len(s), 0)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('{}.show("{}")'.format(classname, uid))
-        s = f.getvalue()
-        self.assertIn(attr, s)
-        self.assertIn(val, s)
-
-    def test_update_3(self):
-        """Tests update 1..."""
-        classname = "City"
-        attr = "foostr"
-        val = "fooval"
-        uid = self.create_class(classname)
-        cmd = '{}.update("{}", "{}", "{}")'
-        #  cmd = 'update {} {} {} {}'
-        cmd = cmd.format(classname, uid, attr, val)
-        #  print("CMD::", cmd)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(cmd)
-        s = f.getvalue()
-        self.assertEqual(len(s), 0)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('{}.show("{}")'.format(classname, uid))
-        s = f.getvalue()
-        self.assertIn(attr, s)
-        self.assertIn(val, s)
-
-    def test_update_4(self):
-        """Tests update 1..."""
-        classname = "State"
-        attr = "foostr"
-        val = "fooval"
-        uid = self.create_class(classname)
-        cmd = '{}.update("{}", "{}", "{}")'
-        #  cmd = 'update {} {} {} {}'
-        cmd = cmd.format(classname, uid, attr, val)
-        #  print("CMD::", cmd)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(cmd)
-        s = f.getvalue()
-        self.assertEqual(len(s), 0)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('{}.show("{}")'.format(classname, uid))
-        s = f.getvalue()
-        self.assertIn(attr, s)
-        self.assertIn(val, s)
-
-    def test_update_5(self):
-        """Tests update 1..."""
-        classname = "Amenity"
-        attr = "foostr"
-        val = "fooval"
-        uid = self.create_class(classname)
-        cmd = '{}.update("{}", "{}", "{}")'
-        #  cmd = 'update {} {} {} {}'
-        cmd = cmd.format(classname, uid, attr, val)
-        #  print("CMD::", cmd)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(cmd)
-        s = f.getvalue()
-        self.assertEqual(len(s), 0)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('{}.show("{}")'.format(classname, uid))
-        s = f.getvalue()
-        self.assertIn(attr, s)
-        self.assertIn(val, s)
-
-    def test_update_6(self):
-        """Tests update 1..."""
-        classname = "Review"
-        attr = "foostr"
-        val = "fooval"
-        uid = self.create_class(classname)
-        cmd = '{}.update("{}", "{}", "{}")'
-        #  cmd = 'update {} {} {} {}'
-        cmd = cmd.format(classname, uid, attr, val)
-        #  print("CMD::", cmd)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(cmd)
-        s = f.getvalue()
-        self.assertEqual(len(s), 0)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('{}.show("{}")'.format(classname, uid))
-        s = f.getvalue()
-        self.assertIn(attr, s)
-        self.assertIn(val, s)
-
-    def test_update_7(self):
-        """Tests update 1..."""
-        classname = "Place"
-        attr = "foostr"
-        val = "fooval"
-        uid = self.create_class(classname)
-        cmd = '{}.update("{}", "{}", "{}")'
-        #  cmd = 'update {} {} {} {}'
-        cmd = cmd.format(classname, uid, attr, val)
-        #  print("CMD::", cmd)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(cmd)
-        s = f.getvalue()
-        self.assertEqual(len(s), 0)
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('{}.show("{}")'.format(classname, uid))
-        s = f.getvalue()
-        self.assertIn(attr, s)
-        self.assertIn(val, s)
-
-    def test_update_everything(self):
-        """Tests update command with errthang, like a baws."""
-        for classname, cls in self.classes().items():
-            uid = self.create_class(classname)
-            for attr, value in self.test_random_attributes.items():
-                if type(value) is not str:
-                    pass
-                quotes = (type(value) == str)
-                self.help_test_update(classname, uid, attr,
-                                      value, quotes, False)
-                self.help_test_update(classname, uid, attr,
-                                      value, quotes, True)
-            pass
-            if classname == "BaseModel":
-                continue
-            for attr, attr_type in self.attributes()[classname].items():
-                if attr_type not in (str, int, float):
-                    continue
-                self.help_test_update(classname, uid, attr,
-                                      self.attribute_values[attr_type],
-                                      True, False)
-                self.help_test_update(classname, uid, attr,
-                                      self.attribute_values[attr_type],
-                                      False, True)
-
-    def help_test_update(self, classname, uid, attr, val, quotes, func):
-        """Tests update commmand."""
-        #  print("QUOTES", quotes)
-        FileStorage._FileStorage__objects = {}
-        if os.path.isfile("file.json"):
+    def tearDown(self):
+        """Remove storage after every test"""
+        try:
             os.remove("file.json")
-        uid = self.create_class(classname)
-        value_str = ('"{}"' if quotes else '{}').format(val)
-        if func:
-            cmd = '{}.update("{}", "{}", {})'
-        else:
-            cmd = 'update {} {} {} {}'
-        cmd = cmd.format(classname, uid, attr, value_str)
+        except IOError:
+            pass
+
+    def output(self, cmd):
+        """Returns console output"""
         with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(cmd)
-        msg = f.getvalue()[:-1]
-        # print("MSG::", msg)
-        # print("CMD::", cmd)
-        self.assertEqual(len(msg), 0)
+            CMD().onecmd(cmd)
+            return f.getvalue()
+
+    def storage(self):
+        """Retrieves storage content"""
+        try:
+            with open('file.json', mode='r', encoding='utf-8') as file:
+                data = file.read()
+                return json.loads(data)
+        except Exception:
+            return {}
+
+    def validModel(self, model):
+        """Tests with valid model"""
+        cmd = "{} {}".format("create", model)
+        output = (self.output(cmd)).strip("\n")
+        data = self.storage()
+        """Check json content"""
+        self.assertEqual(1, len(data))
+        """Validate key"""
+        key = "{}.{}".format(model, output)
+        self.assertIn(key, data.keys())
+        """Validate initial attributes"""
+        value = data.get(key, {})
+        values = value.keys()
+        self.assertTrue(type(value) == dict)
+        self.assertIn("id", values)
+        self.assertIn("created_at", values)
+        self.assertIn("updated_at", values)
+        self.assertTrue("__class__", values)
+        """Check attribute values"""
+        self.assertEqual(value.get("id", None), output)
+        self.assertEqual(value.get("__class__", None), model)
+
+    def test_without_model(self):
+        """without model"""
+        output = self.output('create')
+        expected = '** class name missing **\n'
+        self.assertEqual(output, expected)
+
+    def test_with_unknown_model(self):
+        """With unknown model"""
+        output = self.output("create Django")
+        expected = "** class doesn't exist **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_user_model(self):
+        """with User model"""
+        self.validModel("User")
+
+    def test_with_base_model(self):
+        """with BaseModel model"""
+        self.validModel("BaseModel")
+
+    def test_with_city_model(self):
+        """with City model"""
+        self.validModel("City")
+
+    def test_with_state_model(self):
+        """with State model"""
+        self.validModel("State")
+
+    def test_with_place_model(self):
+        """with Place model"""
+        self.validModel("Place")
+
+    def test_with_review_model(self):
+        """with Review model"""
+        self.validModel("Review")
+
+    def test_with_amenity_model(self):
+        """with Amenity model"""
+        self.validModel("Review")
+
+
+class TestShowCommand(unittest.TestCase):
+    """
+    Test show command
+    """
+
+    def setUp(self):
+        """Reset storage object"""
+        models.storage.clean()
+
+    def tearDown(self):
+        """Remove storage after every test"""
+        try:
+            os.remove("file.json")
+        except IOError:
+            pass
+
+    def output(self, cmd):
+        """Returns console output"""
         with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('{}.show("{}")'.format(classname, uid))
-        s = f.getvalue()
-        self.assertIn(str(val), s)
-        self.assertIn(attr, s)
+            CMD().onecmd(cmd)
+            return f.getvalue()
 
-    def test_do_update_error(self):
-        """Tests update command with errors."""
-        uid = self.create_class("BaseModel")
+    def test_without_model(self):
+        """test without model"""
+        output = self.output("show")
+        expected = "** class name missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_invalid_model(self):
+        """test with invalid model"""
+        output = self.output("show MyModel")
+        expected = "** class doesn't exist **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_without_id(self):
+        """test with BaseModel model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("show BaseModel")
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_without_id(self):
+        """test with User model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("show User")
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_without_id(self):
+        """test with City model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("show City")
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_without_id(self):
+        """test with State model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("show State")
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_without_id(self):
+        """test with Place model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("show Place")
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_without_id(self):
+        """test with Review model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("show Review")
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_without_id(self):
+        """test with Amenity model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("show Amenity")
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("show BaseModel 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("show User 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("show City 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("show State 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("show Place 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("show Review 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("show Amenity 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_valid_id(self):
+        user = User()
+        cmd = "show User {}".format(user.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(user)
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_valid_id(self):
+        base = BaseModel()
+        cmd = "show BaseModel {}".format(base.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(base)
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_valid_id(self):
+        city = City()
+        cmd = "show City {}".format(city.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(city)
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_valid_id(self):
+        state = State()
+        cmd = "show State {}".format(state.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(state)
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_valid_id(self):
+        place = Place()
+        cmd = "show Place {}".format(place.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(place)
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_valid_id(self):
+        review = Review()
+        cmd = "show Review {}".format(review.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(review)
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_valid_id(self):
+        amenity = Amenity()
+        cmd = "show Amenity {}".format(amenity.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(amenity)
+        self.assertEqual(output, expected)
+
+
+class TestModelDotShowCommand(unittest.TestCase):
+    """
+    Test show command
+    """
+    def setUp(self):
+        """Reset storage object"""
+        models.storage.clean()
+
+    def tearDown(self):
+        """Remove storage after every test"""
+        try:
+            os.remove("file.json")
+        except IOError:
+            pass
+
+    def output(self, cmd):
+        """Returns console output"""
         with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("update")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class name missing **")
+            CMD().onecmd(cmd)
+            return f.getvalue()
 
+    def test_with_invalid_model(self):
+        """test with invalid model"""
+        output = self.output("MyModel.show()")
+        expected = "** class doesn't exist **\n"
+        self.assertEqual(output, expected)
+
+    def withoutId(self, model):
+        """test without model"""
+        expected = "** instance id missing **\n"
+        cmd = '{}.show()'.format(model)
+        output = self.output(cmd)
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_without_id(self):
+        """test with BaseModel model no id"""
+        self.withoutId("BaseModel")
+
+    def test_with_user_model_without_id(self):
+        """test with User model no id"""
+        self.withoutId("User")
+
+    def test_with_city_model_without_id(self):
+        """test with City model no id"""
+        self.withoutId("City")
+
+    def test_with_state_model_without_id(self):
+        """test with State model no id"""
+        self.withoutId("State")
+
+    def test_with_place_model_without_id(self):
+        """test with Place model no id"""
+        self.withoutId("Place")
+
+    def test_with_review_model_without_id(self):
+        """test with Review model no id"""
+        self.withoutId("Review")
+
+    def test_with_amenity_model_without_id(self):
+        """test with Amenity model no id"""
+        self.withoutId("Amenity")
+
+    def test_with_base_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('BaseModel.show("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('User.show("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('City.show("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('State.show("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('Place.show("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('Review.show("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('Amenity.show("88888")')
+        self.assertEqual(output, expected)
+
+    def with_empty_id_string(self, model):
+        expected = "** no instance found **\n"
+        output = self.output('{}.show("")'.format(model))
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_with_empty_id(self):
+        self.with_empty_id_string("BaseModel")
+
+    def test_with_user_model_with_empty_id(self):
+        self.with_empty_id_string("User")
+
+    def test_with_city_model_with_empty_id(self):
+        self.with_empty_id_string("City")
+
+    def test_with_state_model_with_empty_id(self):
+        self.with_empty_id_string("State")
+
+    def test_with_place_model_with_empty_id(self):
+        self.with_empty_id_string("Place")
+
+    def test_with_review_model_with_empty_id(self):
+        self.with_empty_id_string("Review")
+
+    def test_with_amenity_model_with_empty_id(self):
+        self.with_empty_id_string("Amenity")
+
+    def test_with_user_model_valid_id(self):
+        user = User()
+        cmd = 'User.show("{}")'.format(user.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(user)
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_valid_id(self):
+        base = BaseModel()
+        cmd = 'BaseModel.show("{}")'.format(base.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(base)
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_valid_id(self):
+        city = City()
+        cmd = 'City.show("{}")'.format(city.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(city)
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_valid_id(self):
+        state = State()
+        cmd = 'State.show("{}")'.format(state.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(state)
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_valid_id(self):
+        place = Place()
+        cmd = 'Place.show("{}")'.format(place.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(place)
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_valid_id(self):
+        review = Review()
+        cmd = 'Review.show("{}")'.format(review.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(review)
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_valid_id(self):
+        amenity = Amenity()
+        cmd = 'Amenity.show("{}")'.format(amenity.id)
+        output = (self.output(cmd)).strip('\n')
+        expected = str(amenity)
+        self.assertEqual(output, expected)
+
+
+class TestDestroyCommand(unittest.TestCase):
+    """
+    Test show command
+    """
+    @classmethod
+    def setUpClass(cls):
+        """Reset storage object"""
+        models.storage.clean()
+        cls.base = BaseModel()
+        cls.user = User()
+        cls.city = City()
+        cls.state = State()
+        cls.place = Place()
+        cls.review = Review()
+        cls.amenity = Amenity()
+        objs = models.storage.all()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove storage after every test"""
+        try:
+            os.remove("file.json")
+        except IOError:
+            pass
+
+    def storage(self):
+        """Retrieves storage content"""
+        try:
+            with open('file.json', mode='r', encoding='utf-8') as file:
+                data = file.read()
+                return json.loads(data)
+        except Exception:
+            return {}
+
+    def output(self, cmd):
+        """Returns console output"""
         with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("update garbage")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class doesn't exist **")
+            CMD().onecmd(cmd)
+            return f.getvalue()
 
+    def test_without_model(self):
+        """test without model"""
+        output = self.output("destroy")
+        expected = "** class name missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_invalid_model(self):
+        """test with invalid model"""
+        output = self.output("destroy MyModel")
+        expected = "** class doesn't exist **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_without_id(self):
+        """test with BaseModel model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("destroy BaseModel")
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_without_id(self):
+        """test with User model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("destroy User")
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_without_id(self):
+        """test with City model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("destroy City")
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_without_id(self):
+        """test with State model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("destroy State")
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_without_id(self):
+        """test with Place model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("destroy Place")
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_without_id(self):
+        """test with Review model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("destroy Review")
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_without_id(self):
+        """test with Amenity model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("destroy Amenity")
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("destroy BaseModel 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("destroy User 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("destroy City 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("destroy State 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("destroy Place 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("destroy Review 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("destroy Amenity 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_valid_id(self):
+        key = "{}.{}".format("User", self.user.id)
+        cmd = "destroy User {}".format(self.user.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_base_model_valid_id(self):
+        key = "{}.{}".format("BaseModel", self.base.id)
+        cmd = "destroy BaseModel {}".format(self.base.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_city_model_valid_id(self):
+        key = "{}.{}".format("City", self.city.id)
+        cmd = "destroy City {}".format(self.city.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_state_model_valid_id(self):
+        key = "{}.{}".format("Review", self.state.id)
+        cmd = "destroy State {}".format(self.state.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_place_model_valid_id(self):
+        key = "{}.{}".format("Place", self.place.id)
+        cmd = "destroy Place {}".format(self.place.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_review_model_valid_id(self):
+        key = "{}.{}".format("Review", self.review.id)
+        cmd = "destroy Review {}".format(self.review.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_amenity_model_valid_id(self):
+        key = "{}.{}".format("Amenity", self.amenity.id)
+        cmd = "destroy Amenity {}".format(self.amenity.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+
+class TestModelDotDestroyCommand(unittest.TestCase):
+    """
+    Test show command
+    """
+    @classmethod
+    def setUpClass(cls):
+        """Reset storage object"""
+        models.storage.clean()
+        cls.base = BaseModel()
+        cls.user = User()
+        cls.city = City()
+        cls.state = State()
+        cls.place = Place()
+        cls.review = Review()
+        cls.amenity = Amenity()
+        objs = models.storage.all()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove storage after every test"""
+        try:
+            os.remove("file.json")
+        except IOError:
+            pass
+
+    def storage(self):
+        """Retrieves storage content"""
+        try:
+            with open('file.json', mode='r', encoding='utf-8') as file:
+                data = file.read()
+                return json.loads(data)
+        except Exception:
+            return {}
+
+    def output(self, cmd):
+        """Returns console output"""
         with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("update BaseModel")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** instance id missing **")
+            CMD().onecmd(cmd)
+            return f.getvalue()
 
+    def test_with_invalid_model(self):
+        """test with invalid model"""
+        output = self.output("MyModel.destroy()")
+        expected = "** class doesn't exist **\n"
+        self.assertEqual(output, expected)
+
+    def withoutId(self, model):
+        """test without model"""
+        expected = "** instance id missing **\n"
+        cmd = '{}.destroy()'.format(model)
+        output = self.output(cmd)
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_without_id(self):
+        """test with BaseModel model no id"""
+        self.withoutId("BaseModel")
+
+    def test_with_user_model_without_id(self):
+        """test with User model no id"""
+        self.withoutId("User")
+
+    def test_with_city_model_without_id(self):
+        """test with City model no id"""
+        self.withoutId("City")
+
+    def test_with_state_model_without_id(self):
+        """test with State model no id"""
+        self.withoutId("State")
+
+    def test_with_place_model_without_id(self):
+        """test with Place model no id"""
+        self.withoutId("Place")
+
+    def test_with_review_model_without_id(self):
+        """test with Review model no id"""
+        self.withoutId("Review")
+
+    def test_with_amenity_model_without_id(self):
+        """test with Amenity model no id"""
+        self.withoutId("Amenity")
+
+    def test_with_base_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('BaseModel.destroy("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('User.destroy("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('City.destroy("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('State.destroy("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('Place.destroy("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('Review.destroy("88888")')
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output('Amenity.destroy("88888")')
+        self.assertEqual(output, expected)
+
+    def with_empty_id_string(self, model):
+        expected = "** no instance found **\n"
+        output = self.output('{}.destroy("")'.format(model))
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_with_empty_id(self):
+        self.with_empty_id_string("BaseModel")
+
+    def test_with_user_model_with_empty_id(self):
+        self.with_empty_id_string("User")
+
+    def test_with_city_model_with_empty_id(self):
+        self.with_empty_id_string("City")
+
+    def test_with_state_model_with_empty_id(self):
+        self.with_empty_id_string("State")
+
+    def test_with_place_model_with_empty_id(self):
+        self.with_empty_id_string("Place")
+
+    def test_with_review_model_with_empty_id(self):
+        self.with_empty_id_string("Review")
+
+    def test_with_amenity_model_with_empty_id(self):
+        self.with_empty_id_string("Amenity")
+
+    def test_with_user_model_valid_id(self):
+        key = "{}.{}".format("User", self.user.id)
+        cmd = 'User.destroy("{}")'.format(self.user.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_base_model_valid_id(self):
+        key = "{}.{}".format("BaseModel", self.base.id)
+        cmd = 'BaseModel.destroy("{}")'.format(self.base.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_city_model_valid_id(self):
+        key = "{}.{}".format("City", self.city.id)
+        cmd = 'City.destroy("{}")'.format(self.city.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_state_model_valid_id(self):
+        key = "{}.{}".format("Review", self.state.id)
+        cmd = 'State.destroy("{}")'.format(self.state.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_place_model_valid_id(self):
+        key = "{}.{}".format("Place", self.place.id)
+        cmd = 'Place.destroy("{}")'.format(self.place.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_review_model_valid_id(self):
+        key = "{}.{}".format("Review", self.review.id)
+        cmd = 'Review.destroy("{}")'.format(self.review.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+    def test_with_amenity_model_valid_id(self):
+        key = "{}.{}".format("Amenity", self.amenity.id)
+        cmd = 'Amenity.destroy("{}")'.format(self.amenity.id)
+        output = (self.output(cmd)).strip('\n')
+        storage = self.storage()
+        self.assertEqual(output, "")
+        self.assertNotIn(key, models.storage.all())
+        self.assertIsNone(storage.get(key, None))
+
+
+class TestAllCommand(unittest.TestCase):
+    """
+    Test show command
+    """
+    def setUp(self):
+        """Reset storage object"""
+        models.storage.clean()
+        self.base = BaseModel()
+        self.user = User()
+        self.city = City()
+        self.state = State()
+        self.place = Place()
+        self.review = Review()
+        self.amenity = Amenity()
+
+    def tearDown(self):
+        """Remove storage after every test"""
+        try:
+            os.remove("file.json")
+        except IOError:
+            pass
+
+    def output(self, cmd):
+        """Returns console output"""
         with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("update BaseModel 6534276893")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** no instance found **")
+            CMD().onecmd(cmd)
+            return f.getvalue()
 
+    def test_without_model(self):
+        """test without model"""
+        output = self.output("all")
+        expected = '["{}", "{}", "{}", "{}", "{}", "{}", "{}"]'.format(
+            str(self.base), str(self.user), str(self.city), str(self.state),
+            str(self.place), str(self.review), str(self.amenity)
+        )
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_invalid_model(self):
+        """test with invalid model"""
+        output = self.output("all MyModel")
+        expected = "** class doesn't exist **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_base_model(self):
+        """test with BaseModel model no id"""
+        output = self.output("all BaseModel")
+        expected = '["{}"]'.format(str(self.base))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_user_model(self):
+        """test with User model no id"""
+        output = self.output("all User")
+        expected = '["{}"]'.format(str(self.user))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_city_model(self):
+        """test with City model no id"""
+        output = self.output("all City")
+        expected = '["{}"]'.format(str(self.city))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_state_model(self):
+        """test with State model no id"""
+        output = self.output("all State")
+        expected = '["{}"]'.format(str(self.state))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_place_model(self):
+        """test with Place model no id"""
+        output = self.output("all Place")
+        expected = '["{}"]'.format(str(self.place))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_review_model(self):
+        """test with Review model no id"""
+        output = self.output("all Review")
+        expected = '["{}"]'.format(str(self.review))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_amenity_model(self):
+        """test with Amenity model no id"""
+        output = self.output("all Amenity")
+        expected = '["{}"]'.format(str(self.amenity))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_empty_storage(self):
+        """test with empty file storage"""
+        models.storage.clean()
+        output = self.output("all")
+        self.assertEqual(output.strip(), '[]')
+
+
+class TestModelDotAllCommand(unittest.TestCase):
+    """
+    Test show command
+    """
+    def setUp(self):
+        """Reset storage object"""
+        models.storage.clean()
+        self.base = BaseModel()
+        self.user = User()
+        self.city = City()
+        self.state = State()
+        self.place = Place()
+        self.review = Review()
+        self.amenity = Amenity()
+
+    def tearDown(self):
+        """Remove storage after every test"""
+        try:
+            os.remove("file.json")
+        except IOError:
+            pass
+
+    def output(self, cmd):
+        """Returns console output"""
         with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('update BaseModel {}'.format(uid))
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** attribute name missing **")
+            CMD().onecmd(cmd)
+            return f.getvalue()
 
+    def test_with_invalid_model(self):
+        """test with invalid model"""
+        output = self.output("MyModel.all()")
+        expected = "** class doesn't exist **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_base_model(self):
+        """test with BaseModel model no id"""
+        output = self.output("BaseModel.all()")
+        expected = '["{}"]'.format(str(self.base))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_user_model(self):
+        """test with User model no id"""
+        output = self.output("User.all()")
+        expected = '["{}"]'.format(str(self.user))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_city_model(self):
+        """test with City model no id"""
+        output = self.output("City.all()")
+        expected = '["{}"]'.format(str(self.city))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_state_model(self):
+        """test with State model no id"""
+        output = self.output("State.all()")
+        expected = '["{}"]'.format(str(self.state))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_place_model(self):
+        """test with Place model no id"""
+        output = self.output("Place.all()")
+        expected = '["{}"]'.format(str(self.place))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_review_model(self):
+        """test with Review model no id"""
+        output = self.output("Review.all()")
+        expected = '["{}"]'.format(str(self.review))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_amenity_model(self):
+        """test with Amenity model no id"""
+        output = self.output("Amenity.all()")
+        expected = '["{}"]'.format(str(self.amenity))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_empty_storage(self):
+        """test with empty file storage"""
+        models.storage.clean()
+        output = self.output("User.all()")
+        self.assertEqual(output.strip(), '[]')
+
+
+class TestModelDotCountCommand(unittest.TestCase):
+    """
+    Test show command
+    """
+    def setUp(self):
+        """Reset storage object"""
+        models.storage.clean()
+        self.base = BaseModel()
+        self.user = User()
+        self.city = City()
+        self.state = State()
+        self.place = Place()
+        self.review = Review()
+        self.amenity = Amenity()
+
+    def tearDown(self):
+        """Remove storage after every test"""
+        try:
+            os.remove("file.json")
+        except IOError:
+            pass
+
+    def output(self, cmd):
+        """Returns console output"""
         with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('update BaseModel {} name'.format(uid))
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** value missing **")
+            CMD().onecmd(cmd)
+            return f.getvalue()
 
-    def test_do_update_error_advanced(self):
-        """Tests update() command with errors."""
-        uid = self.create_class("BaseModel")
+    def test_with_invalid_model(self):
+        """test with invalid model"""
+        output = self.output("MyModel.count()")
+        expected = "** class doesn't exist **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_base_model(self):
+        """test with BaseModel model no id"""
+        output = self.output("BaseModel.count()")
+        self.assertEqual(output.strip(), '1')
+
+    def test_with_user_model(self):
+        """test with User model no id"""
+        output = self.output("User.count()")
+        self.assertEqual(output.strip(), '1')
+
+    def test_with_city_model(self):
+        """test with City model no id"""
+        output = self.output("City.count()")
+        self.assertEqual(output.strip(), '1')
+
+    def test_with_state_model(self):
+        """test with State model no id"""
+        output = self.output("State.count()")
+        self.assertEqual(output.strip(), '1')
+
+    def test_with_place_model(self):
+        """test with Place model no id"""
+        output = self.output("Place.count()")
+        self.assertEqual(output.strip(), '1')
+
+    def test_with_review_model(self):
+        """test with Review model no id"""
+        output = self.output("Review.count()")
+        self.assertEqual(output.strip(), '1')
+
+    def test_with_amenity_model(self):
+        """test with Amenity model no id"""
+        output = self.output("Amenity.count()")
+        self.assertEqual(output.strip(), '1')
+
+    def test_with_empty_storage(self):
+        """test with empty file storage"""
+        models.storage.clean()
+        output = self.output("User.count()")
+        self.assertEqual(output.strip(), '0')
+
+
+class TestAllCommand(unittest.TestCase):
+    """
+    Test show command
+    """
+    def setUp(self):
+        """Reset storage object"""
+        models.storage.clean()
+        self.base = BaseModel()
+        self.user = User()
+        self.city = City()
+        self.state = State()
+        self.place = Place()
+        self.review = Review()
+        self.amenity = Amenity()
+
+    def tearDown(self):
+        """Remove storage after every test"""
+        try:
+            os.remove("file.json")
+        except IOError:
+            pass
+
+    def output(self, cmd):
+        """Returns console output"""
         with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd(".update()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class name missing **")
+            CMD().onecmd(cmd)
+            return f.getvalue()
 
+    def test_without_model(self):
+        """test without model"""
+        output = self.output("all")
+        expected = '["{}", "{}", "{}", "{}", "{}", "{}", "{}"]'.format(
+            str(self.base), str(self.user), str(self.city), str(self.state),
+            str(self.place), str(self.review), str(self.amenity)
+        )
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_invalid_model(self):
+        """test with invalid model"""
+        output = self.output("all MyModel")
+        expected = "** class doesn't exist **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_base_model(self):
+        """test with BaseModel model no id"""
+        output = self.output("all BaseModel")
+        expected = '["{}"]'.format(str(self.base))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_user_model(self):
+        """test with User model no id"""
+        output = self.output("all User")
+        expected = '["{}"]'.format(str(self.user))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_city_model(self):
+        """test with City model no id"""
+        output = self.output("all City")
+        expected = '["{}"]'.format(str(self.city))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_state_model(self):
+        """test with State model no id"""
+        output = self.output("all State")
+        expected = '["{}"]'.format(str(self.state))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_place_model(self):
+        """test with Place model no id"""
+        output = self.output("all Place")
+        expected = '["{}"]'.format(str(self.place))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_review_model(self):
+        """test with Review model no id"""
+        output = self.output("all Review")
+        expected = '["{}"]'.format(str(self.review))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_amenity_model(self):
+        """test with Amenity model no id"""
+        output = self.output("all Amenity")
+        expected = '["{}"]'.format(str(self.amenity))
+        self.assertEqual(output.strip(), expected)
+
+    def test_with_empty_storage(self):
+        """test with empty file storage"""
+        models.storage.clean()
+        output = self.output("all")
+        self.assertEqual(output.strip(), '[]')
+
+
+class TestUpdateCommand(unittest.TestCase):
+    """
+    Test show command
+    """
+    @classmethod
+    def setUpClass(cls):
+        """Reset storage object"""
+        models.storage.clean()
+        cls.base = BaseModel()
+        cls.user = User()
+        cls.city = City()
+        cls.state = State()
+        cls.place = Place()
+        cls.review = Review()
+        cls.amenity = Amenity()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove storage after every test"""
+        try:
+            os.remove("file.json")
+        except IOError:
+            pass
+
+    def storage(self):
+        """Retrieves storage content"""
+        try:
+            with open('file.json', mode='r', encoding='utf-8') as file:
+                data = file.read()
+                return json.loads(data)
+        except Exception:
+            return {}
+
+    def output(self, cmd):
+        """Returns console output"""
         with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("garbage.update()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** class doesn't exist **")
+            CMD().onecmd(cmd)
+            return f.getvalue()
 
+    def test_without_model(self):
+        """test without model"""
+        output = self.output("update")
+        expected = "** class name missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_invalid_model(self):
+        """test with invalid model"""
+        output = self.output("update MyModel")
+        expected = "** class doesn't exist **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_without_id(self):
+        """test with BaseModel model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("update BaseModel")
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_without_id(self):
+        """test with User model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("update User")
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_without_id(self):
+        """test with City model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("update City")
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_without_id(self):
+        """test with State model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("update State")
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_without_id(self):
+        """test with Place model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("update Place")
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_without_id(self):
+        """test with Review model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("update Review")
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_without_id(self):
+        """test with Amenity model no id"""
+        expected = "** instance id missing **\n"
+        output = self.output("update Amenity")
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("update BaseModel 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("update User 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("update City 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("update State 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("update Place 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("update Review 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_invalid_id(self):
+        expected = "** no instance found **\n"
+        output = self.output("update Amenity 88888")
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_without_attribute(self):
+        cmd = "update User {}".format(self.user.id)
+        output = self.output(cmd)
+        expected = "** attribute name missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_without_attribute(self):
+        cmd = "update BaseModel {}".format(self.base.id)
+        output = self.output(cmd)
+        expected = "** attribute name missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_without_attribute(self):
+        cmd = "update City {}".format(self.city.id)
+        output = self.output(cmd)
+        expected = "** attribute name missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_without_attribute(self):
+        cmd = "update State {}".format(self.state.id)
+        output = self.output(cmd)
+        expected = "** attribute name missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_without_attribute(self):
+        cmd = "update Place {}".format(self.place.id)
+        output = self.output(cmd)
+        expected = "** attribute name missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_without_attribute(self):
+        cmd = "update State {}".format(self.state.id)
+        output = self.output(cmd)
+        expected = "** attribute name missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_without_attribute(self):
+        cmd = "update Amenity {}".format(self.amenity.id)
+        output = self.output(cmd)
+        expected = "** attribute name missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_without_attribute_value(self):
+        cmd = "update BaseModel {} name".format(self.base.id)
+        output = self.output(cmd)
+        expected = "** value missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_without_attribute_value(self):
+        cmd = "update User {} name".format(self.user.id)
+        output = self.output(cmd)
+        expected = "** value missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_city_model_without_attribute(self):
+        cmd = "update City {} name".format(self.city.id)
+        output = self.output(cmd)
+        expected = "** value missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_state_model_without_attribute(self):
+        cmd = "update State {} name".format(self.state.id)
+        output = self.output(cmd)
+        expected = "** value missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_place_model_without_attribute_value(self):
+        cmd = "update Place {} name".format(self.place.id)
+        output = self.output(cmd)
+        expected = "** value missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_review_model_without_attribute_value(self):
+        cmd = "update Review {} name".format(self.review.id)
+        output = self.output(cmd)
+        expected = "** value missing **\n"
+        self.assertEqual(output, expected)
+
+    def test_with_amenity_model_without_attribute_value(self):
+        cmd = "update Amenity {} name".format(self.amenity.id)
+        output = self.output(cmd)
+        expected = "** value missing **\n"
+        self.assertEqual(output, expected)
+
+    def single(self, model, obj):
+        cmd = "update {} {} name Ludten".format(model, obj.id)
+        previousUpdate = obj.updated_at
+        output = self.output(cmd)
+        self.assertEqual(output, "")
+        self.assertTrue(obj.updated_at > previousUpdate)
+        self.assertEqual(getattr(obj, "name", ""), "Ludten")
+
+    def test_with_base_model_with_single_attribute_value(self):
+        self.single('BaseModel', self.base)
+
+    def test_with_user_model_with_single_attribute_value(self):
+        self.single('User', self.user)
+
+    def test_with_city_model_with_single_attribute_value(self):
+        self.single('City', self.city)
+
+    def test_with_state_model_with_single_attribute_value(self):
+        self.single('State', self.state)
+
+    def test_with_place_model_with_single_attribute_value(self):
+        self.single('Place', self.place)
+
+    def test_with_review_model_with_single_attribute_value(self):
+        self.single('Review', self.review)
+
+    def test_with_amenity_model_with_single_attribute_value(self):
+        self.single('Amenity', self.amenity)
+
+    def double(self, model, obj):
+        cmd = "update {} {} 'grade' '1st class' age 27".format(model, obj.id)
+        previousUpdate = obj.updated_at
+        output = self.output(cmd)
+        self.assertEqual(output, "")
+        self.assertTrue(obj.updated_at > previousUpdate)
+        self.assertEqual(getattr(obj, "grade", ""), "1st class")
+        self.assertFalse(hasattr(obj, 'age'))
+
+    def test_with_base_model_with_double_attribute_value(self):
+        self.double('BaseModel', self.base)
+
+    def test_with_user_model_with_double_attribute_value(self):
+        self.double('User', self.user)
+
+    def test_with_city_model_with_double_attribute_value(self):
+        self.double('City', self.city)
+
+    def test_with_state_model_with_double_attribute_value(self):
+        self.double('State', self.state)
+
+    def test_with_place_model_with_double_attribute_value(self):
+        self.double('Place', self.place)
+
+    def test_with_review_model_with_double_attribute_value(self):
+        self.double('Review', self.review)
+
+    def test_with_amenity_model_with_double_attribute_value(self):
+        self.double('Amenity', self.amenity)
+
+
+class TestModelDotUpdateCommand(unittest.TestCase):
+    """
+    Test dotted update command
+    """
+    @classmethod
+    def setUpClass(cls):
+        """Reset storage object"""
+        models.storage.clean()
+        cls.base = BaseModel()
+        cls.user = User()
+        cls.city = City()
+        cls.state = State()
+        cls.place = Place()
+        cls.review = Review()
+        cls.amenity = Amenity()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove storage after every test"""
+        try:
+            os.remove("file.json")
+        except IOError:
+            pass
+
+    def storage(self):
+        """Retrieves storage content"""
+        try:
+            with open('file.json', mode='r', encoding='utf-8') as file:
+                data = file.read()
+                return json.loads(data)
+        except Exception:
+            return {}
+
+    def output(self, cmd):
+        """Returns console output"""
         with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("BaseModel.update()")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** instance id missing **")
+            CMD().onecmd(cmd)
+            return f.getvalue()
 
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("BaseModel.update(6534276893)")
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** no instance found **")
+    def test_with_invalid_model(self):
+        """test with invalid model"""
+        output = self.output(f"MyModel.update('9787676', 'name', 'Ludten')")
+        expected = "** class doesn't exist **\n"
+        self.assertEqual(output, expected)
 
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('BaseModel.update("{}")'.format(uid))
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** attribute name missing **")
+    def withoutId(self, model):
+        """test without model"""
+        expected = "** instance id missing **\n"
+        cmd = "{}.update()".format(model)
+        output = self.output(cmd)
+        self.assertEqual(output, expected)
 
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd('BaseModel.update("{}", "name")'.format(uid))
-        msg = f.getvalue()[:-1]
-        self.assertEqual(msg, "** value missing **")
+    def test_with_base_model_without_id(self):
+        self.withoutId('BaseModel')
 
-    def create_class(self, classname):
-        """Creates a class for console tests."""
-        with patch('sys.stdout', new=StringIO()) as f:
-            HBNBCommand().onecmd("create {}".format(classname))
-        uid = f.getvalue()[:-1]
-        self.assertTrue(len(uid) > 0)
-        return uid
+    def test_with_user_model_without_id(self):
+        self.withoutId('User')
 
-    def help_load_dict(self, rep):
-        """Helper method to test dictionary equality."""
-        rex = re.compile(r"^\[(.*)\] \((.*)\) (.*)$")
-        res = rex.match(rep)
-        self.assertIsNotNone(res)
-        s = res.group(3)
-        s = re.sub(r"(datetime\.datetime\([^)]*\))", "'\\1'", s)
-        d = json.loads(s.replace("'", '"'))
-        return d
+    def test_with_city_model_without_id(self):
+        self.withoutId('City')
 
-    def classes(self):
-        """Returns a dictionary of valid classes and their references."""
-        from models.base_model import BaseModel
-        from models.user import User
-        from models.state import State
-        from models.city import City
-        from models.amenity import Amenity
-        from models.place import Place
-        from models.review import Review
+    def test_with_state_model_without_id(self):
+        self.withoutId('State')
 
-        classes = {"BaseModel": BaseModel,
-                   "User": User,
-                   "State": State,
-                   "City": City,
-                   "Amenity": Amenity,
-                   "Place": Place,
-                   "Review": Review}
-        return classes
+    def test_with_place_model_without_id(self):
+        self.withoutId('Place')
 
-    def attributes(self):
-        """Returns the valid attributes and their types for classname."""
-        attributes = {
-            "BaseModel":
-                     {"id": str,
-                      "created_at": datetime.datetime,
-                      "updated_at": datetime.datetime},
-            "User":
-                     {"email": str,
-                      "password": str,
-                      "first_name": str,
-                      "last_name": str},
-            "State":
-                     {"name": str},
-            "City":
-                     {"state_id": str,
-                      "name": str},
-            "Amenity":
-                     {"name": str},
-            "Place":
-                     {"city_id": str,
-                      "user_id": str,
-                      "name": str,
-                      "description": str,
-                      "number_rooms": int,
-                      "number_bathrooms": int,
-                      "max_guest": int,
-                      "price_by_night": int,
-                      "latitude": float,
-                      "longitude": float,
-                      "amenity_ids": list},
-            "Review":
-                     {"place_id": str,
-                      "user_id": str,
-                      "text": str}
-        }
-        return attributes
+    def test_with_review_model_without_id(self):
+        self.withoutId('Review')
 
+    def test_with_amenity_model_without_id(self):
+        self.withoutId('Amenity')
 
-if __name__ == "__main__":
-    unittest.main()
+    def withInvalidId(self, model):
+        """test with in valid id"""
+        expected = "** no instance found **\n"
+        cmd = '{}.update("687876786")'.format(model)
+        output = self.output(cmd)
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_invalid_id(self):
+        self.withInvalidId('BaseModel')
+
+    def test_with_user_model_invalid_id(self):
+        self.withInvalidId('User')
+
+    def test_with_city_model_invalid_id(self):
+        self.withInvalidId('City')
+
+    def test_with_state_model_invalid_id(self):
+        self.withInvalidId('State')
+
+    def test_with_place_model_invalid_id(self):
+        self.withInvalidId('Place')
+
+    def test_with_review_model_invalid_id(self):
+        self.withInvalidId('Review')
+
+    def test_with_amenity_model_invalid_id(self):
+        self.withInvalidId('Amenity')
+
+    def withoutAttribute(self, model, uid):
+        expected = "** attribute name missing **\n"
+        cmd = '{}.update("{}")'.format(model, uid)
+        output = self.output(cmd)
+        self.assertEqual(output, expected)
+
+    def test_with_user_model_without_attribute(self):
+        self.withoutAttribute('BaseModel', self.base.id)
+
+    def test_with_base_model_without_attribute(self):
+        self.withoutAttribute('User', self.user.id)
+
+    def test_with_city_model_without_attribute(self):
+        self.withoutAttribute('City', self.city.id)
+
+    def test_with_state_model_without_attribute(self):
+        self.withoutAttribute('State', self.state.id)
+
+    def test_with_place_model_without_attribute(self):
+        self.withoutAttribute('Place', self.place.id)
+
+    def test_with_review_model_without_attribute(self):
+        self.withoutAttribute('Review', self.review.id)
+
+    def test_with_amenity_model_without_attribute(self):
+        self.withoutAttribute('Amenity', self.amenity.id)
+
+    def withoutAttributeValue(self, model, uid):
+        """test without attribute value"""
+        expected = "** value missing **\n"
+        cmd = '{}.update("{}", "name")'.format(model, uid)
+        output = self.output(cmd)
+        self.assertEqual(output, expected)
+
+    def test_with_base_model_without_attribute_value(self):
+        self.withoutAttributeValue('BaseModel', self.base.id)
+
+    def test_with_user_model_without_attribute_value(self):
+        self.withoutAttributeValue('User', self.user.id)
+
+    def test_with_city_model_without_attribute(self):
+        self.withoutAttributeValue('City', self.city.id)
+
+    def test_with_state_model_without_attribute(self):
+        self.withoutAttributeValue('State', self.state.id)
+
+    def test_with_place_model_without_attribute_value(self):
+        self.withoutAttributeValue('Place', self.place.id)
+
+    def test_with_review_model_without_attribute_value(self):
+        self.withoutAttributeValue('Review', self.review.id)
+
+    def test_with_amenity_model_without_attribute_value(self):
+        self.withoutAttributeValue('Amenity', self.amenity.id)
+
+    def with_valid_id_attribute_and_value(self, model, obj):
+        cmd = '{}.update("{}", "name" "John Doe")'.format(model, obj.id)
+        previousUpdate = obj.updated_at
+        output = self.output(cmd)
+        self.assertEqual(output, "")
+        self.assertTrue(obj.updated_at > previousUpdate)
+        self.assertEqual(getattr(obj, "name", ""), "John Doe")
+
+    def test_with_base_model_with_string_attribute_value(self):
+        self.with_valid_id_attribute_and_value('BaseModel', self.base)
+
+    def test_with_user_model_with_string_attribute_value(self):
+        self.with_valid_id_attribute_and_value('User', self.user)
+
+    def test_with_city_model_with_string_attribute_value(self):
+        self.with_valid_id_attribute_and_value('City', self.city)
+
+    def test_with_state_model_with_string_attribute_value(self):
+        self.with_valid_id_attribute_and_value('State', self.state)
+
+    def test_with_place_model_with_string_attribute_value(self):
+        self.with_valid_id_attribute_and_value('Place', self.place)
+
+    def test_with_review_model_with_string_attribute_value(self):
+        self.with_valid_id_attribute_and_value('Review', self.review)
+
+    def test_with_amenity_model_with_string_attribute_value(self):
+        self.with_valid_id_attribute_and_value('Amenity', self.amenity)
+
+    def with_valid_id_and_empty_dictionary(self, model, obj):
+        cmd = '{}.update("{}", {})'.format(model, obj.id, {})
+        updated_at = obj.updated_at
+        output = self.output(cmd)
+        expected = ""
+        self.assertEqual(output, expected)
+        self.assertEqual(updated_at, obj.updated_at)
+
+    def test_base_model_with_empty_dictionary(self):
+        self.with_valid_id_and_empty_dictionary('BaseModel', self.base)
+
+    def test_user_model_with_empty_dictionary(self):
+        self.with_valid_id_and_empty_dictionary('User', self.user)
+
+    def test_city_model_with_empty_dictionary(self):
+        self.with_valid_id_and_empty_dictionary('City', self.city)
+
+    def test_state_model_with_empty_dictionary(self):
+        self.with_valid_id_and_empty_dictionary('State', self.state)
+
+    def test_place_model_with_empty_dictionary(self):
+        self.with_valid_id_and_empty_dictionary('Place', self.place)
+
+    def test_review_model_with_empty_dictionary(self):
+        self.with_valid_id_and_empty_dictionary('Review', self.review)
+
+    def test_amenity_model_with_empty_dictionary(self):
+        self.with_valid_id_and_empty_dictionary('Amenity', self.amenity)
+
+    def with_valid_id_and_dictionary(self, model, obj):
+        cmd = '{}.update("{}", {})'.format(
+            model, obj.id, {"grade": "1st class", "age": 27}
+        )
+        previousUpdate = obj.updated_at
+        output = self.output(cmd)
+        self.assertEqual(output, "")
+        self.assertTrue(obj.updated_at > previousUpdate)
+        self.assertTrue(hasattr(obj, 'grade'))
+        self.assertEqual(getattr(obj, "grade", ""), "1st class")
+        self.assertTrue(hasattr(obj, 'age'))
+        self.assertEqual(getattr(obj, 'age', 0), 27)
+
+    def test_with_base_model_with_double_attribute_value(self):
+        self.with_valid_id_and_dictionary('BaseModel', self.base)
+
+    def test_with_user_model_with_double_attribute_value(self):
+        self.with_valid_id_and_dictionary('User', self.user)
+
+    def test_with_city_model_with_double_attribute_value(self):
+        self.with_valid_id_and_dictionary('City', self.city)
+
+    def test_with_state_model_with_double_attribute_value(self):
+        self.with_valid_id_and_dictionary('State', self.state)
+
+    def test_with_place_model_with_double_attribute_value(self):
+        self.with_valid_id_and_dictionary('Place', self.place)
+
+    def test_with_review_model_with_double_attribute_value(self):
+        self.with_valid_id_and_dictionary('Review', self.review)
+
+    def test_with_amenity_model_with_double_attribute_value(self):
+        self.with_valid_id_and_dictionary('Amenity', self.amenity)
