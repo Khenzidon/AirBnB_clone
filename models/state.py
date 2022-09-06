@@ -1,9 +1,15 @@
 #!/usr/bin/python3
-"""Module for State class."""
 
+"""
+A subclass module of Basemodel
+located in the base_model.py
+"""
 from models.base_model import BaseModel
 
 
 class State(BaseModel):
-    """Class representing a State."""
+    """
+    A subclass module of Basemodel
+    with some added attributes
+    """
     name = ""
